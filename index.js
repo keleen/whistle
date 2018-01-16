@@ -1,16 +1,18 @@
-var net = require('net');
-var tls = require('tls');
-var res = require('http').OutgoingMessage.prototype;
+var net = require('net'); //提供异步的网络 API 接口可以创建基于流式的 tcp 或 ip 的协议的服务端或客户端
+var tls = require('tls'); // TLS 模块提供了基于 OpenSSL 构建的传输层安全性和安全套接子层协议的实现
+var res = require('http').OutgoingMessage.prototype; // node 文档中没有关于 outgingMessage 的描述，貌似是关于 http 消息头的处理或者描述
 
-var ver = process.version.substring(1).split('.');
-var setHeader = res.setHeader;
+var ver = process.version.substring(1).split('.');  // 获取当前 NodeJS 版本号，并用 '.' 分割开来
+var setHeader = res.setHeader;  //调用 http 请求中设置消息头的方法
 
+//重写 res 中关于 setHeader 的方法
 res.setHeader = function(field, val){
   try {
     return setHeader.call(this, field, val);
   } catch(e) {}
 };
 
+//兼容性处理，如有版本是 7.7 一上的，
 if (ver[0] >= 7 && ver[1] >= 7) {
   var connect = net.Socket.prototype.connect;
   if (typeof connect === 'function') {
@@ -25,7 +27,7 @@ if (ver[0] >= 7 && ver[1] >= 7) {
 }
 
 //see: https://github.com/joyent/node/issues/9272
-process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
+process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0'; //据说百度搜索结构，此处的是为了让 nodeJS 不认证 https 的证书的，可能表达有误
 if (typeof tls.checkServerIdentity == 'function') {
   var checkServerIdentity = tls.checkServerIdentity;
   tls.checkServerIdentity = function() {
@@ -37,10 +39,17 @@ if (typeof tls.checkServerIdentity == 'function') {
   };
 }
 
+/**
+ * 判断是否为一个字符串
+ * @param {*} s 
+ */
 function isPipeName(s) {
   return typeof s === 'string' && toNumber(s) === false;
 }
-
+/**
+ * 判断是否为一个整整数
+ * @param {*} x 
+ */
 function toNumber(x) {
   return (x = Number(x)) >= 0 ? x : false;
 }
@@ -75,6 +84,8 @@ module.exports = function(options, callback) {
     callback = options;
     options = null;
   }
+  // 配置默认选项
   require('./lib/config').extend(options);
+  //调用 lib 目录下面的 index 服务初始化程序和启动服务
   return require('./lib')(callback);
 };
